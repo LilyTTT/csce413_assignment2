@@ -3,13 +3,13 @@
 
 import argparse
 import logging
-import socket
+import subprocess
 import time
 
 DEFAULT_KNOCK_SEQUENCE = [1234, 5678, 9012]
 DEFAULT_PROTECTED_PORT = 2222
 DEFAULT_SEQUENCE_WINDOW = 10.0
-
+INPUT = "INPUT"
 
 def setup_logging():
     logging.basicConfig(
@@ -19,16 +19,82 @@ def setup_logging():
     )
 
 
-def open_protected_port(protected_port):
-    """Open the protected port using firewall rules."""
-    # TODO: Use iptables/nftables to allow access to protected_port.
-    logging.info("TODO: Open firewall for port %s", protected_port)
+def run_iptables(args):
+    args_str = [str(a) for a in args]
+    logging.info("iptables %s", " ".join(args))
+    subprocess.run(["iptables"] + args_str, check=True)
 
 
-def close_protected_port(protected_port):
-    """Close the protected port using firewall rules."""
-    # TODO: Remove firewall rules for protected_port.
-    logging.info("TODO: Close firewall for port %s", protected_port)
+def install_knock_rules(sequence, window_seconds, protected_port):
+    """
+    Install iptables rules implementing a port-knocking sequence
+    using the recent module.
+    """
+    
+    # flush existing rules
+    run_iptables(["-F"])
+    run_iptables(["-X"])
+    
+    # set default: drop all incoming traffic on target port
+    run_iptables([
+        "-A", INPUT,
+        "-p", "tcp",
+        "--dport", str(protected_port),
+        "-j", "DROP",
+    ])
+
+    # build knock sequence
+    for i, port in enumerate(sequence):
+        current = f"KNOCK{i + 1}"
+
+        if i == 0:
+            # first knock
+            run_iptables([
+                "-A", INPUT,
+                "-p", "tcp",
+                "--dport", str(port),
+                "-m", "recent",
+                "--name", current,
+                "--set",
+                "-j", "DROP",
+            ])
+        else:
+            previous = f"KNOCK{i}"
+            run_iptables([
+                "-A", INPUT,
+                "-p", "tcp",
+                "--dport", str(port),
+                "-m", "recent",
+                "--name", previous,
+                "--rcheck",
+                "--seconds", str(int(window_seconds)),
+                "-m", "recent",
+                "--name", current,
+                "--set",
+                "-j", "DROP",
+            ])
+
+    # allow protected port if sequence completed
+    final_list = f"KNOCK{len(sequence)}"
+    run_iptables([
+        "-A", INPUT,
+        "-p", "tcp",
+        "--dport", str(protected_port),
+        "-m", "recent",
+        "--name", final_list,
+        "--rcheck",
+        "--seconds", str(int(window_seconds)),
+        "-j", "ACCEPT",
+    ])
+
+    # default deny for protected port
+    run_iptables([
+        "-A", "INPUT",
+        "-p", "tcp",
+        "--dport", str(protected_port),
+        "-j", "DROP",
+    ])
+
 
 
 def listen_for_knocks(sequence, window_seconds, protected_port):
@@ -36,12 +102,9 @@ def listen_for_knocks(sequence, window_seconds, protected_port):
     logger = logging.getLogger("KnockServer")
     logger.info("Listening for knocks: %s", sequence)
     logger.info("Protected port: %s", protected_port)
+    logger.info("Implemented")
 
-    # TODO: Create UDP or TCP listeners for each knock port.
-    # TODO: Track each source IP and its progress through the sequence.
-    # TODO: Enforce timing window per sequence.
-    # TODO: On correct sequence, call open_protected_port().
-    # TODO: On incorrect sequence, reset progress.
+    install_knock_rules(sequence, window_seconds, protected_port)
 
     while True:
         time.sleep(1)
