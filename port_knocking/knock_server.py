@@ -9,7 +9,7 @@ import time
 DEFAULT_KNOCK_SEQUENCE = [1234, 5678, 9012]
 DEFAULT_PROTECTED_PORT = 2222
 DEFAULT_SEQUENCE_WINDOW = 10.0
-INPUT = "INPUT"
+CHAIN = "DOCKER-USER"
 
 def setup_logging():
     logging.basicConfig(
@@ -37,7 +37,7 @@ def install_knock_rules(sequence, window_seconds, protected_port):
     
     # set default: drop all incoming traffic on target port
     run_iptables([
-        "-A", INPUT,
+        "-A", CHAIN,
         "-p", "tcp",
         "--dport", str(protected_port),
         "-j", "DROP",
@@ -50,7 +50,7 @@ def install_knock_rules(sequence, window_seconds, protected_port):
         if i == 0:
             # first knock
             run_iptables([
-                "-A", INPUT,
+                "-A", CHAIN,
                 "-p", "tcp",
                 "--dport", str(port),
                 "-m", "recent",
@@ -61,7 +61,7 @@ def install_knock_rules(sequence, window_seconds, protected_port):
         else:
             previous = f"KNOCK{i}"
             run_iptables([
-                "-A", INPUT,
+                "-A", CHAIN,
                 "-p", "tcp",
                 "--dport", str(port),
                 "-m", "recent",
@@ -77,7 +77,7 @@ def install_knock_rules(sequence, window_seconds, protected_port):
     # allow protected port if sequence completed
     final_list = f"KNOCK{len(sequence)}"
     run_iptables([
-        "-A", INPUT,
+        "-A", CHAIN,
         "-p", "tcp",
         "--dport", str(protected_port),
         "-m", "recent",
@@ -89,7 +89,7 @@ def install_knock_rules(sequence, window_seconds, protected_port):
 
     # default deny for protected port
     run_iptables([
-        "-A", "INPUT",
+        "-A", CHAIN,
         "-p", "tcp",
         "--dport", str(protected_port),
         "-j", "DROP",

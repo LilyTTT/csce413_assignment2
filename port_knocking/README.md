@@ -1,22 +1,25 @@
-## Port Knocking Starter Template
+## Port Knocking
 
-This directory is a starter template for the port knocking portion of the assignment.
+Port knocking was implemented with Linux `iptables` and the `recent` module (suggested by the repo README.md). The protected service is only accessible after a conseutive ports have been knocked in order within a specified time window.
 
-### What you need to implement
-- Pick a protected service/port (default is 2222).
-- Define a knock sequence (e.g., 1234, 5678, 9012).
-- Implement a server that listens for knocks and validates the sequence.
-- Open the protected port only after a valid sequence.
-- Add timing constraints and reset on incorrect sequences.
-- Implement a client to send the knock sequence.
+### Files
+#### Server Side (knock_server.py)
+Default configurations
+- Sequence: 1234, 5678, 9012
+- protected port: 2222
+- time window: 10 seconds
 
-### Getting started
-1. Implement your server logic in `knock_server.py`.
-2. Implement your client logic in `knock_client.py`.
-3. Update `demo.sh` to demonstrate your flow.
-4. Run from the repo root with `docker compose up port_knocking`.
+The server side uses `iptables` with `recent` module to track knock progress & enforce a time window, only allowing access after the knocks have happened in the expected order.
+
+- Protected port is blocked by default
+- Knocks are recorded using `--set` in `iptables -m recent`
+- Knocks are validated using `--rcheck`
+
+#### Client Side (knock_client.py)
+Send a sequence of TCP connection attempts (knocks) to the target host.
+`--check` flag can be used to test connectivity to the protected port after knocking
 
 ### Example usage
 ```bash
-python3 knock_client.py --target 172.20.0.40 --sequence 1234,5678,9012
+python3 knock_client.py --target 172.20.0.40 --sequence 1234,5678,9012 --check
 ```
