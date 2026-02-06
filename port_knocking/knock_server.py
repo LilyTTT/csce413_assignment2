@@ -34,16 +34,8 @@ def install_knock_rules(sequence, window_seconds, protected_port):
     """
     
     # # flush existing rules
-    # run_iptables(["-F"])
-    # run_iptables(["-X"])
-    
-    # set default: drop all incoming traffic on target port
-    run_iptables([
-        "-A", CHAIN,
-        "-p", "tcp",
-        "--dport", str(protected_port),
-        "-j", "DROP",
-    ])
+    run_iptables(["-F"])
+    run_iptables(["-X"])
 
     # build knock sequence
     for i, port in enumerate(sequence):
