@@ -12,10 +12,12 @@ DEFAULT_DELAY = 0.3
 
 def send_knock(target, port, delay):
     """Send a single knock to the target port."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(0.5)
     try:
-        # Payload does not matter; iptables only sees the packet
-        sock.sendto(b"knock", (target, port))
+        sock.connect((target, port))
+    except Exception:
+        pass
     finally:
         sock.close()
 
