@@ -4,12 +4,14 @@
 import argparse
 import logging
 import subprocess
+import socket
+import threading
 import time
 
 DEFAULT_KNOCK_SEQUENCE = [1234, 5678, 9012]
 DEFAULT_PROTECTED_PORT = 2222
 DEFAULT_SEQUENCE_WINDOW = 10.0
-CHAIN = "DOCKER-USER"
+CHAIN = "INPUT"
 
 def setup_logging():
     logging.basicConfig(
@@ -95,7 +97,17 @@ def install_knock_rules(sequence, window_seconds, protected_port):
         "-j", "DROP",
     ])
 
-
+def listen_on_port(port):
+    logger = logging.getLogger("KnockServer")
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(('0.0.0.0', port))
+    server.listen(1)
+    
+    while True:
+        conn, addr = server.accept()
+        logger.info(f"Recived knock from {addr} on port {port}")
+        conn.close()
 
 def listen_for_knocks(sequence, window_seconds, protected_port):
     """Listen for knock sequence and open the protected port."""
@@ -106,6 +118,8 @@ def listen_for_knocks(sequence, window_seconds, protected_port):
 
     install_knock_rules(sequence, window_seconds, protected_port)
 
+    for port in sequence:
+        threading.Thread(target=listen_on_port, args=(port,), daemon=True).start()
     while True:
         time.sleep(1)
 
