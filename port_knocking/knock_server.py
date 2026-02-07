@@ -90,6 +90,7 @@ def install_knock_rules(sequence, window_seconds, protected_port):
     ])
 
 def listen_on_port(port):
+    # open expected ports
     logger = logging.getLogger("KnockServer")
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

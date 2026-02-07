@@ -12,10 +12,12 @@ DEFAULT_DELAY = 0.3
 
 def send_knock(target, port, delay):
     """Send a single knock to the target port."""
+    # send tcp packets - iptable rules apply to tcp not utp
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(0.5)
     try:
         sock.connect((target, port))
+    # because the opened port doesn't respond, we need to avoid time out & stuck on retrying the same port
     except Exception:
         pass
     finally:

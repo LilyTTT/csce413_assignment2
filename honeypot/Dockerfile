@@ -2,10 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY honeypot.py .
+COPY honeypot.py logger.py ./
 
 # Create logs directory
 RUN mkdir -p /app/logs
+
+# Install dependencies
+RUN pip install --no-cache-dir paramiko
 
 EXPOSE 22
 

@@ -1,16 +1,21 @@
-## Honeypot Starter Template
+## Honeypot
 
-This directory is a starter template for the honeypot portion of the assignment.
+The honeypot service was implemented using the default templates and `paramiko`, impersonating an SSH server, logging authentication attemps and rejecting all logins.
 
-### What you need to implement
-- Choose a protocol (SSH, HTTP, or multi-protocol).
-- Simulate a convincing service banner and responses.
-- Log connection metadata, authentication attempts, and attacker actions.
-- Store logs under `logs/` and include an `analysis.md` summary.
-- Update `honeypot.py` and `logger.py` (and add modules as needed) to implement the honeypot.
+### honeypot.py
+Default Configurations:
+- Listen address: 0.0.0.0 (any)
+- Listen port: 22 (inside container, mapped to 2222 on host)
+- SSH banner: OpenSSH_8.9p1 Ubuntu-3ubuntu0.13 (grabbed from secret SSH)
 
-### Getting started
-1. Implement your honeypot logic in `honeypot.py`.
-2. Wire logging in `logger.py` and record results in `logs/`.
-3. Summarize your findings in `analysis.md`.
-4. Run from the repo root with `docker-compose up honeypot`.
+The server listens for incoming connections and mimics a real service by sending a valid banner. Scanning the honeypot port and the secret ssh port gives the exact same response.
+
+Behavior:
+- One-time RSA hostkey generated on container startup
+- Logs all username/password attempts
+- Logs source network and port of connection attemps
+- Always fails authentication attemps
+
+### Example Usage 
+From host:
+`ssh -p 2222 user@localhost`
